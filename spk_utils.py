@@ -12,22 +12,27 @@ from scipy.signal import find_peaks_cwt
 
 __all__=['entropy']
 
-def _calculate_edges_with_fixed_nbin(minimum, maximum, nbins=20, 
+def _calculate_edges_with_fixed_resolution(minedge, maxedge, res=20, 
                                      scale='log', verbose=False):
-    ''' Module's internal function to calculate the edges with fixed bin number.
-    The 
+    ''' Module's internal function to calculate the edges with fixed time bin resolution.
+    For the log scale res is the parameter K. The number of bins 
     The output is a np.array vector.
     '''
+    res = float(res)
     if scale == 'log':
+        K = res*np.log10(maxedge/float(minedge))
+        print K
+        
         if verbose:
-            print('Returning logarithmic scale edges.')
-        return min_edge*(10**(np.arange(1,nbins+1)/float(nbins)))
+            print('Returning log scale edges (base 10).')
+        print np.arange(1,K+1)
+        return float(minedge)*10**(np.arange(1,K+1)/res)
     else:
         if verbose:
             print('Returning linear scale edges.')
-        return np.linspace(min_edge,max_edge,nbins)
+        return np.arange(minedge,maxedge,res)
     
-def entropy(spiketrain, nbins=20, scale='log'):
+def entropy(spiketrain, edges=None, res=20, scale='log'):
     ''' Calculates the entropy of a spiketrain.
     For reference see Dorval et al. 2009.
     Order [2] defines the order to use. 
@@ -38,12 +43,19 @@ def entropy(spiketrain, nbins=20, scale='log'):
         # NOTE: It is zero by definition.
         return np.nan
     else:
-        # Calculate edges
-        edges = _calculate_edges_with_fixed_nbin(np.min(isi)*0.8, 
-                                                 np.max(isi)*1.2,
-                                                 nbins,scale)
-        
-        return 1
+        if edges is None:
+            # Calculate edges
+            edges = _calculate_edges_with_fixed_resolution(np.min(isi)*0.8, 
+                                                     np.max(isi)*1.2,
+                                                     res,scale)
+        # In Dorval et al. 2009 the probabity is defined 
+        # as the # of isis in each bin divided by the number of events,
+        # so we can not use the density.
+        counts,edges = np.histogram(isi,edges,density=False)
+        Pisi = counts/float(len(isi))
+        idx = np.nonzero(Pisi)
+        H = -np.sum(Pisi[idx]*np.log2(Pisi[idx]))
+        return H
     
 def argfindpeaks(data, threshold=-20,deadwindow=30):
     ''' Extracts the indexes of the peaks in the data with threshold crossing.

@@ -9,10 +9,11 @@ Requires matplotlib.pylab
 '''
 
 import matplotlib.pylab as plt
+import numpy as np
 
 __all__ = ['plotRastergram']
 
-def plotRastergram(plt,spiketrains,offset,color=[0.1,0.1,0.1]):
+def plotRastergram(spiketrains,offset=0,color=[0.1,0.1,0.1]):
     '''
     Plots a rastergram of the spike trains
     Spiketrains should be a list of spiketrains
